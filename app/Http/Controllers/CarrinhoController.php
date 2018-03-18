@@ -174,7 +174,7 @@ class CarrinhoController extends Controller
 
 
 
-        $req->session()->flash('mensagem-falha', 'Compra concluída com sucesso');
+        $req->session()->flash('mensagem-sucesso', 'Compra concluída com sucesso');
             return redirect()->route('carrinho.compras');
     }
 
@@ -192,6 +192,70 @@ class CarrinhoController extends Controller
         ])->orderBy('updated_at','desc')->get();
 
        return view('carrinho.compras',compact('compras','cancelados'));
+    }
+
+    public function cancelar()
+    {
+         $this->middleware('VerifyCsrfToken');
+
+        $req = Request();
+        $idpedido       = $req->input('pedido_id');
+        $idspedido_prod = $req->input('id');
+        $idusuario      = Auth::id();
+
+        if( empty($idspedido_prod) ) {
+            $req->session()->flash('mensagem-falha', 'Nenhum item selecionado para cancelamento!');
+            return redirect()->route('carrinho.compras');
+        }
+
+        $check_pedido = Pedido::where([
+            'id'      => $idpedido,
+            'user_id' => $idusuario,
+            'status'  => 'PA' // Pago
+            ])->exists();
+
+        if( !$check_pedido ) {
+            $req->session()->flash('mensagem-falha', 'Pedido não encontrado para cancelamento!');
+            return redirect()->route('carrinho.compras');
+        }
+
+        $check_produtos = PedidoProduto::where([
+                'pedido_id' => $idpedido,
+                'status'    => 'PA'
+            ])->whereIn('id', $idspedido_prod)->exists();
+
+        if( !$check_produtos ) {
+            $req->session()->flash('mensagem-falha', 'Produtos do pedido não encontrados!');
+            return redirect()->route('carrinho.compras');
+        }
+
+        PedidoProduto::where([
+                'pedido_id' => $idpedido,
+                'status'    => 'PA'
+            ])->whereIn('id', $idspedido_prod)->update([
+                'status' => 'CA'
+            ]);
+
+        $check_pedido_cancel = PedidoProduto::where([
+                'pedido_id' => $idpedido,
+                'status'    => 'PA'
+            ])->exists();
+
+        if( !$check_pedido_cancel ) {
+            Pedido::where([
+                'id' => $idpedido
+            ])->update([
+                'status' => 'CA'
+            ]);
+
+            $req->session()->flash('mensagem-sucesso', 'Compra cancelada com sucesso!');
+
+        } else {
+            $req->session()->flash('mensagem-sucesso', 'Item(ns) da compra cancelado(s) com sucesso!');
+        }
+
+        return redirect()->route('carrinho.compras');
+
     }
 
     
