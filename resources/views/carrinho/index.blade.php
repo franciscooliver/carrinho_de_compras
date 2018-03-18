@@ -78,7 +78,13 @@
         </div>
 
          <div class="row">
-            <a class="btn-large tooltipped col l4 s4 m4 offset-18 offset-l8 offset-s8 offfset-m8" data-position="top" data-delay="50" data-tooltip="Voltar a página inicial para continuar comprando?" href="{{ route('index') }}">Continuar comprando</a>
+            <a class="btn-large tooltipped col l4 s4 m4 offset-12 offset-l2 offset-s2 offfset-m2" data-position="top" data-delay="50" data-tooltip="Voltar a página inicial para continuar comprando?" href="{{ route('index') }}">Continuar comprando</a>
+            <form method="POST" action="{{ route('carrinho.concluir') }}">
+                {{ csrf_field() }}
+
+                <input type="hidden" name="pedido_id" value="{{ $pedido->id }}">
+                <button type="submit" class="btn-large blue col offset-l1 offset-s1 offset-s1 offfset-m1 l5 m5 s5 tooltipped" data-position="top" data-delay="50" data-tooltip="Voltar a página inicial para continuar comprando?" href="{{ route('index') }}">Concluir compra</button>
+            </form>
         </div>
        @empty
         <h5>Não há nenhum produto no carrinho</h5>

@@ -130,5 +130,69 @@ class CarrinhoController extends Controller
 
     }
 
+    public function concluir()
+    {
+        $this->middleware('VerifyCsrfToken');
+
+
+        $req = Request();
+
+        $idpedido = $req->input('pedido_id');
+        $idusuario = Auth::id();
+
+        $check_pedido = Pedido::where([
+            'id' => $idpedido,
+            'user_id' => $idusuario,
+            'status'=>'RE' //reservado
+        ])->exists();
+
+        if(!$check_pedido){
+            $req->session()->flash('mensagem-falha', ' Pedido não encontrado!');
+            return redirect()->route('carrinho.index');
+        }
+
+        $check_produtos = PedidoProduto::where([
+            'pedido_id'=>$idpedido
+        ])->exists();
+
+        if(!$check_produtos){
+            $req->session()->flash('mensagem-falha', 'Produtos do pedido não encontrado!');
+            return redirect()->route('carrinho.index');
+        }
+
+        PedidoProduto::where([
+            'pedido_id' => $idpedido
+        ])->update([
+            'status' => 'PA'
+        ]);
+
+        Pedido::where([
+            'id' => $idpedido
+        ])->update([
+            'status' => 'PA'
+        ]);
+
+
+
+        $req->session()->flash('mensagem-falha', 'Compra concluída com sucesso');
+            return redirect()->route('carrinho.compras');
+    }
+
+
+    public function compras()
+    {
+        $compras = Pedido::where([
+            'status' => 'PA',
+            'user_id' => Auth::id()
+        ])->orderBy('created_at','desc')->get();
+
+        $cancelados = Pedido::where([
+            'status' => 'CA',
+            'user_id' => Auth::id()
+        ])->orderBy('updated_at','desc')->get();
+
+       return view('carrinho.compras',compact('compras','cancelados'));
+    }
+
     
 }
